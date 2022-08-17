@@ -1,0 +1,39 @@
+From 366e8b8630d382747d4386a46d0a24aea05c546f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=B5=85=E7=88=B1?=
+ <21982139+ShallowAi@users.noreply.github.com>
+Date: Wed, 17 Aug 2022 16:30:25 +0800
+Subject: [PATCH] update log4j libraries
+
+
+diff --git a/pom.xml b/pom.xml
+index f6a49efad..229328ef6 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -94,7 +94,7 @@
+         <dependency>
+             <groupId>org.apache.logging.log4j</groupId>
+             <artifactId>log4j-core</artifactId>
+-            <version>2.17.0</version>
++            <version>2.18.0</version>
+             <scope>compile</scope>
+         </dependency>
+ 
+@@ -102,13 +102,13 @@
+         <dependency>
+             <groupId>org.apache.logging.log4j</groupId>
+             <artifactId>log4j-slf4j-impl</artifactId>
+-            <version>2.17.0</version>
++            <version>2.18.0</version>
+             <scope>runtime</scope>
+         </dependency>
+         <dependency>
+             <groupId>org.apache.logging.log4j</groupId>
+             <artifactId>log4j-iostreams</artifactId>
+-            <version>2.17.0</version>
++            <version>2.18.0</version>
+         </dependency>
+ 
+         <!-- Paper - Async loggers -->
+-- 
+2.32.0.windows.2
+
