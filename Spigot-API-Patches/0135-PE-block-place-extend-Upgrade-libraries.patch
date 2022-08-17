@@ -1,0 +1,23 @@
+From 6590b6f110d35e4e3236890d45de15a1bfcd3ed1 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=B5=85=E7=88=B1?=
+ <21982139+ShallowAi@users.noreply.github.com>
+Date: Wed, 17 Aug 2022 15:59:08 +0800
+Subject: [PATCH] PE block place extend, Upgrade libraries
+
+
+diff --git a/pom.xml b/pom.xml
+index 2fa2dd7c..bdf53aed 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -115,7 +115,7 @@
+         <dependency>
+             <groupId>org.slf4j</groupId>
+             <artifactId>slf4j-api</artifactId>
+-            <version>1.7.25</version>
++            <version>1.7.36</version>
+             <scope>compile</scope>
+         </dependency>
+ 
+-- 
+2.32.0.windows.2
+
