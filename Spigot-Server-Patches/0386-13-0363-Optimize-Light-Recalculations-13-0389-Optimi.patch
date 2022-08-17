@@ -1,0 +1,125 @@
+From e752571a9435e63cc2c9daa9f5964f900786c96b Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E6=B5=85=E7=88=B1?=
+ <21982139+ShallowAi@users.noreply.github.com>
+Date: Wed, 17 Aug 2022 15:36:24 +0800
+Subject: [PATCH] 13-0363-Optimize-Light-Recalculations
+ 13-0389-Optimize-World-Time-Updates
+ 13-0341-Optimize-getChunkIfLoaded-type-calls
+
+
+diff --git a/src/main/java/net/minecraft/server/Chunk.java b/src/main/java/net/minecraft/server/Chunk.java
+index 4060fd274..377276a16 100644
+--- a/src/main/java/net/minecraft/server/Chunk.java
++++ b/src/main/java/net/minecraft/server/Chunk.java
+@@ -328,6 +328,7 @@ public class Chunk {
+         if (l > k && this.areNeighborsLoaded(1)) { // Paper
+             for (int i1 = k; i1 < l; ++i1) {
+                 this.world.c(EnumSkyBlock.SKY, new BlockPosition(i, i1, j));
++                this.world.updateBrightness(EnumSkyBlock.SKY, new BlockPosition(i, i1, j), this); // Paper
+             }
+ 
+             this.s = true;
+diff --git a/src/main/java/net/minecraft/server/ChunkProviderServer.java b/src/main/java/net/minecraft/server/ChunkProviderServer.java
+index ad5485908..f145fad47 100644
+--- a/src/main/java/net/minecraft/server/ChunkProviderServer.java
++++ b/src/main/java/net/minecraft/server/ChunkProviderServer.java
+@@ -403,7 +403,7 @@ public class ChunkProviderServer implements IChunkProvider {
+                     continue;
+                 }
+ 
+-                Chunk neighbor = this.getChunkIfLoaded(chunk.locX + x, chunk.locZ + z);
++                Chunk neighbor = this.chunks.get(ChunkCoordIntPair.asLong(chunk.locX + x, chunk.locZ + z)); // Papers
+                 if (neighbor != null) {
+                     neighbor.setNeighborUnloaded(-x, -z);
+                     chunk.setNeighborUnloaded(x, z);
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 3b982f990..37b03724b 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -868,10 +868,21 @@ public abstract class MinecraftServer implements ICommandListener, Runnable, IAs
+ 
+         MinecraftTimings.timeUpdateTimer.startTiming(); // Spigot
+         // Send time updates to everyone, it will get the right time from the world the player is in.
+-        if (this.ticks % 20 == 0) {
+-            for (int i = 0; i < this.getPlayerList().players.size(); ++i) {
+-                EntityPlayer entityplayer = (EntityPlayer) this.getPlayerList().players.get(i);
+-                entityplayer.playerConnection.sendPacket(new PacketPlayOutUpdateTime(entityplayer.world.getTime(), entityplayer.getPlayerTime(), entityplayer.world.getGameRules().getBoolean("doDaylightCycle"))); // Add support for per player time
++                // Paper start - optimize time updates
++           for (final WorldServer world : this.worlds) {
++               final boolean doDaylight = world.getGameRules().getBoolean("doDaylightCycle");
++               final long dayTime = world.getDayTime();
++               long worldTime = world.getTime();
++               final PacketPlayOutUpdateTime worldPacket = new PacketPlayOutUpdateTime(worldTime, dayTime, doDaylight);
++               for (EntityHuman entityhuman : world.players) {
++                       if (!(entityhuman instanceof EntityPlayer) || (ticks + entityhuman.getId()) % 20 != 0) {
++                               continue;
++                           }
++                       EntityPlayer entityplayer = (EntityPlayer) entityhuman;
++                       long playerTime = entityplayer.getPlayerTime();
++                       PacketPlayOutUpdateTime packet = (playerTime == dayTime) ? worldPacket :
++                               new PacketPlayOutUpdateTime(worldTime, playerTime, doDaylight);
++                       entityplayer.playerConnection.sendPacket(packet); // Add support for per player time
+             }
+         }
+         MinecraftTimings.timeUpdateTimer.stopTiming(); // Spigot
+diff --git a/src/main/java/net/minecraft/server/World.java b/src/main/java/net/minecraft/server/World.java
+index bc231c7f2..2a4ac52c8 100644
+--- a/src/main/java/net/minecraft/server/World.java
++++ b/src/main/java/net/minecraft/server/World.java
+@@ -513,8 +513,9 @@ public abstract class World implements IBlockAccess {
+         }
+ 
+         if (this.worldProvider.m()) {
+-            for (i1 = k; i1 <= l; ++i1) {
+-                this.c(EnumSkyBlock.SKY, new BlockPosition(i, i1, j));
++            Chunk chunk = getChunkIfLoaded(i >> 4, j >> 4); // Paper
++            for (i1 = k; chunk != null && i1 <= l; ++i1) { // Paper
++                this.updateBrightness(EnumSkyBlock.SKY, new BlockPosition(i, i1, j), chunk); // Paper
+             }
+         }
+ 
+@@ -2120,12 +2121,13 @@ public abstract class World implements IBlockAccess {
+             return null;
+         } else {
+             // CraftBukkit start
+-            if (capturedTileEntities.containsKey(blockposition)) {
+-                return capturedTileEntities.get(blockposition);
++            TileEntity tileentity = null; // Paper
++            if (!capturedTileEntities.isEmpty() && (tileentity = capturedTileEntities.get(blockposition)) != null) { // Paper
++                return tileentity; // Paper
+             }
+             // CraftBukkit end
+ 
+-            TileEntity tileentity = null;
++            //TileEntity tileentity = null; // Paper - move up
+ 
+             if (this.O) {
+                 tileentity = this.F(blockposition);
+@@ -2474,6 +2476,11 @@ public abstract class World implements IBlockAccess {
+     public boolean c(EnumSkyBlock enumskyblock, BlockPosition blockposition) {
+         // CraftBukkit start - Use neighbor cache instead of looking up
+         Chunk chunk = this.getChunkIfLoaded(blockposition.getX() >> 4, blockposition.getZ() >> 4);
++        // Paper start - optimize light updates where chunk is known
++        return updateBrightness(enumskyblock, blockposition, chunk);
++    }
++    public boolean updateBrightness(EnumSkyBlock enumskyblock, BlockPosition blockposition, Chunk chunk) {
++        // Paper end
+         if (chunk == null || !chunk.areNeighborsLoaded(1) /*!this.areChunksLoaded(blockposition, 17, false)*/) {
+             // CraftBukkit end
+             return false;
+diff --git a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
+index afb141c62..6d46a0f93 100644
+--- a/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
++++ b/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
+@@ -227,7 +227,7 @@ public class CraftWorld implements World {
+             return false;
+         }
+ 
+-        net.minecraft.server.Chunk chunk = world.getChunkProviderServer().getLoadedChunkAt(x, z);
++        net.minecraft.server.Chunk chunk = world.getChunkIfLoaded(x, z); // Paper - optimize ifLaoded
+         if (chunk != null) {
+             world.getChunkProviderServer().unload(chunk);
+         }
+-- 
+2.32.0.windows.2
+
