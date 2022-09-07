@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E5=8D=83=E9=A3=9E=E5=A4=8F?= <gal499605076@gmail.com>
+Date: Wed, 7 Sep 2022 15:31:40 +0800
+Subject: [PATCH] Remove Username Check.
+
+
+diff --git a/src/main/java/net/minecraft/server/network/ServerLoginPacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+index befcb501b4b1b6330bf3cd53e00e30b01efade6f..fea8b9172163e05436f2d8c4f3d5bf142bc40b63 100644
+--- a/src/main/java/net/minecraft/server/network/ServerLoginPacketListenerImpl.java
++++ b/src/main/java/net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+@@ -293,9 +293,10 @@ public class ServerLoginPacketListenerImpl implements ServerLoginPacketListener
+     }
+ 
+     public static boolean isValidUsername(String name) {
+-        return name.chars().filter((i) -> {
+-            return i <= 32 || i >= 127;
+-        }).findAny().isEmpty();
++        return true;
++//        return name.chars().filter((i) -> {
++//            return i <= 32 || i >= 127;
++//        }).findAny().isEmpty();
+     }
+ 
+     @Override
