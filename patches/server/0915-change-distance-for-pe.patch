@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E5=8D=83=E9=A3=9E=E5=A4=8F?= <gal499605076@gmail.com>
+Date: Tue, 25 Oct 2022 15:09:49 +0800
+Subject: [PATCH] change distance for pe
+
+
+diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+index 3faf67d100e49836eb9b408e88c296e615ca33f8..6762e43e3b2da9d1ab22e1c2263d98ac05daf363 100644
+--- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
++++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+@@ -1806,8 +1806,8 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Ser
+     // Spigot end
+ 
+     // Paper start
+-    private static final int SURVIVAL_PLACE_DISTANCE_SQUARED = 6 * 6;
+-    private static final int CREATIVE_PLACE_DISTANCE_SQUARED = 7 * 7;
++    private static final int SURVIVAL_PLACE_DISTANCE_SQUARED = 8 * 8;
++    private static final int CREATIVE_PLACE_DISTANCE_SQUARED = 11 * 11;
+     private boolean isOutsideOfReach(double x, double y, double z) {
+         Location eyeLoc = this.getCraftPlayer().getEyeLocation();
+         double reachDistance = org.bukkit.util.NumberConversions.square(eyeLoc.getX() - x) + org.bukkit.util.NumberConversions.square(eyeLoc.getY() - y) + org.bukkit.util.NumberConversions.square(eyeLoc.getZ() - z);
+@@ -1847,7 +1847,7 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Ser
+                 int i = this.player.level.getMaxBuildHeight();
+ 
+                 if (blockposition.getY() < i) {
+-                    if (this.awaitingPositionFromClient == null && this.player.distanceToSqr((double) blockposition.getX() + 0.5D, (double) blockposition.getY() + 0.5D, (double) blockposition.getZ() + 0.5D) < 64.0D && (worldserver.mayInteract(this.player, blockposition)  || (worldserver.paperConfig.allowUsingSignsInsideSpawnProtection && worldserver.getBlockState(blockposition).getBlock() instanceof net.minecraft.world.level.block.SignBlock))) { // Paper - sign check
++                    if (this.awaitingPositionFromClient == null && this.player.distanceToSqr((double) blockposition.getX() + 0.5D, (double) blockposition.getY() + 0.5D, (double) blockposition.getZ() + 0.5D) < 100.0D && (worldserver.mayInteract(this.player, blockposition)  || (worldserver.paperConfig.allowUsingSignsInsideSpawnProtection && worldserver.getBlockState(blockposition).getBlock() instanceof net.minecraft.world.level.block.SignBlock))) { // Paper - sign check
+                         this.player.stopUsingItem(); // CraftBukkit - SPIGOT-4706
+                         InteractionResult enuminteractionresult = this.player.gameMode.useItemOn(this.player, worldserver, itemstack, enumhand, movingobjectpositionblock);
+ 
+@@ -2464,7 +2464,7 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Ser
+ 
+             double d0 = 36.0D;
+ 
+-            if (this.player.distanceToSqr(entity) < 36.0D) {
++            if (this.player.distanceToSqr(entity) < 55.0D) {
+                 packet.dispatch(new ServerboundInteractPacket.Handler() {
+                     private void performInteraction(InteractionHand enumhand, ServerGamePacketListenerImpl.EntityInteraction playerconnection_a, PlayerInteractEntityEvent event) { // CraftBukkit
+                         ItemStack itemstack = ServerGamePacketListenerImpl.this.player.getItemInHand(enumhand).copy();
